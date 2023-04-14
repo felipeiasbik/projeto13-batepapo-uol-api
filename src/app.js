@@ -3,6 +3,7 @@ import cors from "cors";
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
 import joi from "joi";
+import dayjs from "dayjs";
 
 // SERVIDOR
 const app = express();
@@ -13,16 +14,20 @@ app.use(cors());
 dotenv.config();
 
 // CONEXÃO BANCO DE DADOS
-let db;
+
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
-mongoClient.connect()
-    .then(() => db = mongoClient.db())
-    .catch((err) => console.log(err.message))
+try {
+    await mongoClient.connect();
+    console.log("MongoDB conectado!");
+} catch {
+    console.log(err.message);
+}
+const db = mongoClient.db();
 
 // HORÁRIO
 
 // ENDPOINTS
-app.post("/participants", (req,res) => {
+app.post("/participants", async (req,res) => {
 
     const userSchema = joi.object({
         name: joi.string().min(1).required(),
@@ -39,10 +44,36 @@ app.post("/participants", (req,res) => {
         return res.status(422).send(errors);
     }
 
-    const newParticipants = { name, lastStatus };
-    db.collection("participants").insertOne(newParticipants)
-        .then(() => res.sendStatus(201))
-        .catch((err) => res.status(500).send(err.message))
+    try {
+        const userExists = await db.collection("participants").findOne( {name: name} );
+        if (userExists) return res.sendStatus(409);
+    
+        const newParticipants = { name, lastStatus };
+        const message = {
+            from: name,
+            to: "Todos",
+            text: "entra na sala...",
+            type: "status",
+            time: dayjs(lastStatus).format("HH:mm:ss")
+        }
+
+        await db.collection("participants").insertOne(newParticipants);
+        await db.collection("messages").insertOne(message);
+            res.sendStatus(201);
+
+    } catch (err) {
+        res.status(500).send(err.message)
+    }
+
+});
+
+app.get("/participants", async (req, res) => {
+    try {
+        const participants = await db.collection("participants").find().toArray();
+        res.send(participants);
+    } catch (err) {
+        console.log(err.message);
+    }
 });
 
 // INICIAR SERVIDOR
