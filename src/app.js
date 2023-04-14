@@ -76,6 +76,43 @@ app.get("/participants", async (req, res) => {
     }
 });
 
+app.post("/messages", async (req, res) => {
+    
+    const userSchema = joi.object({
+        text: joi.string().min(1).required(),
+        type: joi.string().valid("message", "private_message").required(),
+    }).unknown(true);
+
+    const {to, text, type} = req.body;
+    const from = req.headers.user;
+    console.log(`from: ${from}`);
+
+    const message = { from, to, text, type };
+    const validation = userSchema.validate(message, { abortEarly: false })
+
+    if (validation.error){
+        const errors = validation.error.details.map(detail => detail.message);
+        return res.status(422).send(errors);
+    }
+
+    try {
+        const userExists = await db.collection("messages").findOne( {from: from} );
+        if (!userExists) return res.sendStatus(422);
+
+        const messageWithTime = { from, to, text, type, time: dayjs(Date.now()).format("HH:mm:ss")}
+        await db.collection("messages").insertOne(messageWithTime);
+            res.sendStatus(201);
+    } catch (err) {
+        console.log(err.message);
+    }
+
+});
+
+app.get("/messages", async (req, res) => {
+    const messagesList = await db.collection("messages").find().toArray()
+    res.send(messagesList)
+});
+
 // INICIAR SERVIDOR
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
