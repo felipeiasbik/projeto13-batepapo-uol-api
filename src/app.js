@@ -111,7 +111,7 @@ app.post("/messages", async (req, res) => {
 
 app.get("/messages", async (req, res) => {
 
-    const limit = Number(req.query.limit);
+    const limit = req.query.limit;
 
     const {user} = req.headers;
 
@@ -125,17 +125,16 @@ app.get("/messages", async (req, res) => {
     }
 
     try {
-        const messagesList = await db.collection("messages").find(query).toArray()
+        const messagesList = await db.collection("messages").find(query).toArray();
 
-        if (limit && (isNaN(limit) && limit < 1)) {
+
+        if (limit && (isNaN(limit) || limit < 1)) {
             return res.sendStatus(422);
         }
 
         if (limit) return res.send(messagesList.slice(-limit));
 
-        if (limit < 1 || isNaN(limit)) return res.sendStatus(422);
-
-        res.send(messagesList)
+        res.send(messagesList);
     } catch (err) {
         console.log(err.message);
     }
