@@ -111,7 +111,8 @@ app.post("/messages", async (req, res) => {
 
 app.get("/messages", async (req, res) => {
 
-    const {to, from} = req.body;
+    const limit = Number(req.query.limit);
+
     const {user} = req.headers;
 
     const query ={
@@ -123,8 +124,22 @@ app.get("/messages", async (req, res) => {
         ]
     }
 
-    const messagesList = await db.collection("messages").find(query).toArray()
-    res.send(messagesList)
+    try {
+        const messagesList = await db.collection("messages").find(query).toArray()
+
+        if (limit && (isNaN(limit) && limit < 1)) {
+            return res.sendStatus(422);
+        }
+
+        if (limit) return res.send(messagesList.slice(-limit));
+
+        if (limit < 1 || isNaN(limit)) return res.sendStatus(422);
+
+        res.send(messagesList)
+    } catch (err) {
+        console.log(err.message);
+    }
+    
 });
 
 // INICIAR SERVIDOR
