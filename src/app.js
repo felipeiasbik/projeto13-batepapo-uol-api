@@ -80,6 +80,7 @@ app.post("/messages", async (req, res) => {
     
     const userSchema = joi.object({
         text: joi.string().min(1).required(),
+        to: joi.string().min(1).required(),
         type: joi.string().valid("message", "private_message").required(),
     }).unknown(true);
 
@@ -109,7 +110,20 @@ app.post("/messages", async (req, res) => {
 });
 
 app.get("/messages", async (req, res) => {
-    const messagesList = await db.collection("messages").find().toArray()
+
+    const {to, from} = req.body;
+    const {user} = req.headers;
+
+    const query ={
+        $or: [
+            {to: user},
+            {from: user},
+            {from: "Todos"},
+            {type: "message"}
+        ]
+    }
+
+    const messagesList = await db.collection("messages").find(query).toArray()
     res.send(messagesList)
 });
 
