@@ -86,7 +86,6 @@ app.post("/messages", async (req, res) => {
 
     const {to, text, type} = req.body;
     const from = req.headers.user;
-    console.log(`from: ${from}`);
 
     const message = { from, to, text, type };
     const validation = userSchema.validate(message, { abortEarly: false })
@@ -119,8 +118,10 @@ app.get("/messages", async (req, res) => {
         $or: [
             {to: user},
             {from: user},
-            {from: "Todos"},
-            {type: "message"}
+            {to: "Todos", type: "message"},
+            {to: user, type: "private_message"},
+            {from: user, type: "private_message"},
+            {type: "status"}
         ]
     }
 
