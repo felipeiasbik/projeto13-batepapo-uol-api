@@ -61,6 +61,7 @@ app.post("/participants", async (req,res) => {
 });
 
 app.get("/participants", async (req, res) => {
+
     try {
         const participants = await db.collection("participants").find().toArray();
         res.send(participants);
@@ -160,5 +161,21 @@ app.post("/status", async (req, res) => {
 
 });
 
+const removeParticipant = async () => {
+    const timeNow = Date.now() - 10000;
+    const nameDelete = await db.collection("participants").find().toArray();
+    let nameExclude = nameDelete[0].name;
+    const message = {
+        from: nameExclude,
+        to: "Todos",
+        text: "sai da sala...",
+        type: "status",
+        time: dayjs(Date.now()).format("HH:mm:ss")
+    }
+    await db.collection("participants").deleteOne({lastStatus: {$lt: timeNow}});
+    await db.collection("messages").insertOne(message);
+}
+
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
+setInterval(removeParticipant, 15000);
