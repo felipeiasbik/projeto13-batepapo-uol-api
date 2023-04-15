@@ -174,6 +174,7 @@ const removeParticipant = async () => {
     }
     await db.collection("participants").deleteOne({lastStatus: {$lt: timeNow}});
     await db.collection("messages").insertOne(message);
+        return message;
 }
 
 const PORT = 5000;
