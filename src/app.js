@@ -172,9 +172,11 @@ const removeParticipant = async () => {
         type: "status",
         time: dayjs(Date.now()).format("HH:mm:ss")
     }
-    await db.collection("participants").deleteOne({lastStatus: {$lt: timeNow}});
-    await db.collection("messages").insertOne(message);
-        return message;
+    const removed = await db.collection("participants").deleteOne({lastStatus: {$lt: timeNow}});
+    if(removed.deletedCount !== 0){
+        const finalMessage = await db.collection("messages").insertOne(message);
+        return finalMessage;
+    }
 }
 
 const PORT = 5000;
