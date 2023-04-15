@@ -128,7 +128,6 @@ app.get("/messages", async (req, res) => {
     try {
         const messagesList = await db.collection("messages").find(query).toArray();
 
-
         if (limit && (isNaN(limit) || limit < 1)) {
             return res.sendStatus(422);
         }
@@ -140,6 +139,30 @@ app.get("/messages", async (req, res) => {
         console.log(err.message);
     }
     
+});
+
+app.post("/status", async (req, res) => {
+
+    const {user} = req.headers;
+
+    if(!req.headers) return res.sendStatus(404);
+
+    try {
+
+        const userExists = await db.collection("participants").findOne( {name: user} );
+        if(!userExists) return res.sendStatus(404);
+
+        if(userExists){
+            const newStatus = { name: user, lastStatus: Date.now()};
+            db.collection("participants").insertOne(newStatus);
+        }
+
+        res.sendStatus(200);
+
+    } catch (err) {
+        console.log(err.message);
+    }
+
 });
 
 // INICIAR SERVIDOR
