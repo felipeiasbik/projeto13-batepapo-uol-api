@@ -4,7 +4,6 @@ import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
 import joi from "joi";
 import dayjs from "dayjs";
-import { stripHtml } from "string-strip-html";
 
 const app = express();
 
@@ -28,7 +27,7 @@ app.post("/participants", async (req,res) => {
         lastStatus: joi.date().timestamp().required()
     });
 
-    const name = stripHtml(req.body.name).result.trim();
+    const { name } = req.body;
     let lastStatus = Date.now();
     const user = { name, lastStatus };
     const validation = userSchema.validate(user, { abortEarly: false })
