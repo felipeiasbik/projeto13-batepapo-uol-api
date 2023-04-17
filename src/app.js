@@ -4,7 +4,6 @@ import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
 import joi from "joi";
 import dayjs from "dayjs";
-import { stripHtml } from "string-strip-html";
 
 const app = express();
 
@@ -23,8 +22,6 @@ const db = mongoClient.db();
 
 app.post("/participants", async (req,res) => {
 
-    const stripHtml = require('string-strip-html');
-
     const userSchema = joi.object({
         name: joi.string().min(1).required(),
         lastStatus: joi.date().timestamp().required()
@@ -32,8 +29,7 @@ app.post("/participants", async (req,res) => {
 
     const { name } = req.body;
     let lastStatus = Date.now();
-    const sanitizedName = stripHtml(name).result.trim();
-    const user = { name: sanitizedName, lastStatus };
+    const user = { name, lastStatus };
     const validation = userSchema.validate(user, { abortEarly: false })
 
     if (validation.error){
@@ -42,12 +38,12 @@ app.post("/participants", async (req,res) => {
     }
 
     try {
-        const userExists = await db.collection("participants").findOne( {name: sanitizedName} );
+        const userExists = await db.collection("participants").findOne( {name: name} );
         if (userExists) return res.sendStatus(409);
     
-        const newParticipants = { name: sanitizedName, lastStatus };
+        const newParticipants = { name, lastStatus };
         const message = {
-            from: sanitizedName,
+            from: name,
             to: "Todos",
             text: "entra na sala...",
             type: "status",
