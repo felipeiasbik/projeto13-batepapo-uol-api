@@ -4,6 +4,7 @@ import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
 import joi from "joi";
 import dayjs from "dayjs";
+import { stripHtml } from "string-strip-html";
 
 const app = express();
 
@@ -22,6 +23,8 @@ const db = mongoClient.db();
 
 app.post("/participants", async (req,res) => {
 
+    const stripHtml = require('string-strip-html');
+
     const userSchema = joi.object({
         name: joi.string().min(1).required(),
         lastStatus: joi.date().timestamp().required()
@@ -29,7 +32,8 @@ app.post("/participants", async (req,res) => {
 
     const { name } = req.body;
     let lastStatus = Date.now();
-    const user = { name, lastStatus };
+    const sanitizedName = stripHtml(name).result.trim();
+    const user = { name: sanitizedName, lastStatus };
     const validation = userSchema.validate(user, { abortEarly: false })
 
     if (validation.error){
@@ -38,12 +42,12 @@ app.post("/participants", async (req,res) => {
     }
 
     try {
-        const userExists = await db.collection("participants").findOne( {name: name} );
+        const userExists = await db.collection("participants").findOne( {name: sanitizedName} );
         if (userExists) return res.sendStatus(409);
     
-        const newParticipants = { name, lastStatus };
+        const newParticipants = { name: sanitizedName, lastStatus };
         const message = {
-            from: name,
+            from: sanitizedName,
             to: "Todos",
             text: "entra na sala...",
             type: "status",
@@ -173,9 +177,8 @@ setInterval(async () => {
             type: "status",
             time: dayjs(Date.now()).format("HH:mm:ss")
         }
-            db.collection("participants").deleteOne(obj)
-            db.collection("messages").insertOne(message);
-            console.log(message);
+        db.collection("participants").deleteOne(obj)
+        db.collection("messages").insertOne(message);
         })
     }
 }, 15000);
